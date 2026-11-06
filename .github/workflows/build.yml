@@ -1,4 +1,4 @@
-name: Build PS4 PKG
+name: Build PS4 PKG with Linux Icon
 
 on:
   push:
@@ -14,23 +14,38 @@ jobs:
       - name: OpenOrbis SDK installieren
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget make clang python3
+          sudo apt-get install -y wget make clang python3 imagemagick
           git clone --recursive https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain.git /opt/openorbis
           echo "OO_PS4_TOOLCHAIN=/opt/openorbis" >> $GITHUB_ENV
           echo "/opt/openorbis/bin" >> $GITHUB_PATH
+
+      - name: Offizielles Linux-Logo herunterladen und anpassen
+        run: |
+          mkdir -p assets
+          # Lädt ein offizielles Tux-Logo herunter
+          wget -O assets/tux.png "https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg.png"
+          
+          # Erstellt icon0.png (512x512 für das PS4-Hauptmenü)
+          convert assets/tux.png -resize 512x512 -background none -gravity center -extent 512x512 assets/icon0.png
+          
+          # Erstellt pic0.png (1920x1080 Hintergrundbild für die App)
+          convert assets/tux.png -resize 1000x1000 -background "#111111" -gravity center -extent 1920x1080 assets/pic0.png
 
       - name: ELF kompilieren
         run: |
           make
 
-      - name: PKG erstellen
+      - name: PKG mit Icon und Hintergrund erstellen
         run: |
-          # Hier wird die ELF-Datei mit einer minimalen param.sfo zu einem PKG verpackt
-          # Das OpenOrbis SDK stellt hierfür Skripte im Toolchain-Ordner bereit
-          python3 /opt/openorbis/tools/pkg_builder.py bin/payload_launcher.elf --title "Payload Launcher" --titleid "CUSA99999" --out bin/payload_launcher.pkg
+          python3 /opt/openorbis/tools/pkg_builder.py bin/payload_launcher.elf \
+            --title "Linux Payload Launcher" \
+            --titleid "CUSA99999" \
+            --icon assets/icon0.png \
+            --background assets/pic0.png \
+            --out bin/payload_launcher.pkg
 
       - name: PKG-Datei hochladen
         uses: actions/upload-artifact@v4
         with:
-          name: ps4-payload-launcher-pkg
+          name: ps4-linux-launcher-pkg
           path: bin/payload_launcher.pkg
