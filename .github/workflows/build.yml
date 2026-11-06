@@ -1,0 +1,24 @@
+name: Build PS4 PKG
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup OpenOrbis Toolchain
+        uses: OpenOrbis/toolchain-action@v1
+
+      - name: Build ELF
+        run: |
+          mkdir -p bin
+          make
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ps4-payload-launcher
+          path: bin/payload_launcher.elf
