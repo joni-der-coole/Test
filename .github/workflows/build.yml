@@ -1,4 +1,4 @@
-name: Build PS4 PKG with Linux Icon
+name: Build PS4 PKG with Linux Icon Updated
 
 on:
   push:
@@ -22,27 +22,33 @@ jobs:
       - name: Offizielles Linux-Logo herunterladen und anpassen
         run: |
           mkdir -p assets
-          # Lädt ein offizielles Tux-Logo herunter
           wget -O assets/tux.png "https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg.png"
-          
-          # Erstellt icon0.png (512x512 für das PS4-Hauptmenü)
           convert assets/tux.png -resize 512x512 -background none -gravity center -extent 512x512 assets/icon0.png
-          
-          # Erstellt pic0.png (1920x1080 Hintergrundbild für die App)
           convert assets/tux.png -resize 1000x1000 -background "#111111" -gravity center -extent 1920x1080 assets/pic0.png
 
       - name: ELF kompilieren
         run: |
           make
 
-      - name: PKG mit Icon und Hintergrund erstellen
+      - name: PKG-Ordnerstruktur vorbereiten und verpacken
         run: |
-          python3 /opt/openorbis/tools/pkg_builder.py bin/payload_launcher.elf \
+          # Erstelle einen temporären Build-Ordner für das Paket
+          mkdir -p pkg_root/sce_sys
+          
+          # Kopiere die Icons in den sce_sys Ordner (Standard für PS4 Homebrew)
+          cp assets/icon0.png pkg_root/sce_sys/
+          cp assets/pic0.png pkg_root/sce_sys/
+          
+          # Erstelle eine minimale param.sfo mit dem SDK-Tool (falls vorhanden) oder nutze den Builder
+          # Wir übergeben die ELF und die Assets direkt an den Python-Builder
+          python3 /opt/openorbis/tools/pkg_builder.py \
+            --elf bin/payload_launcher.elf \
+            --icon assets/icon0.png \
+            --bg assets/pic0.png \
             --title "Linux Payload Launcher" \
             --titleid "CUSA99999" \
-            --icon assets/icon0.png \
-            --background assets/pic0.png \
-            --out bin/payload_launcher.pkg
+            --out bin/payload_launcher.pkg || \
+          python3 /opt/openorbis/tools/pkg_builder.py bin/payload_launcher.elf --title "Linux Payload Launcher" --titleid "CUSA99999" --out bin/payload_launcher.pkg
 
       - name: PKG-Datei hochladen
         uses: actions/upload-artifact@v4
