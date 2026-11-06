@@ -1,24 +1,31 @@
-name: Build PS4 PKG
+name: Build PS4 Homebrew
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Repository auschecken
+        uses: actions/checkout@v4
 
-      - name: Setup OpenOrbis Toolchain
-        uses: OpenOrbis/toolchain-action@v1
-
-      - name: Build ELF
+      - name: OpenOrbis SDK installieren
         run: |
-          mkdir -p bin
+          sudo apt-get update
+          sudo apt-get install -y wget make clang
+          # OpenOrbis SDK herunterladen und einrichten
+          git clone --recursive https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain.git /opt/openorbis
+          echo "OO_PS4_TOOLCHAIN=/opt/openorbis" >> $GITHUB_ENV
+          echo "/opt/openorbis/bin" >> $GITHUB_PATH
+
+      - name: Kompilieren mit Make
+        run: |
           make
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+      - name: ELF-Datei hochladen
+        uses: actions/upload-artifact@v4
         with:
-          name: ps4-payload-launcher
+          name: ps4-payload-launcher-elf
           path: bin/payload_launcher.elf
